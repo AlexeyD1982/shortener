@@ -8,7 +8,7 @@ import (
 
 var url string
 
-func GetUrlHandler(w http.ResponseWriter, r *http.Request) {
+func GetURLHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Wrong request", http.StatusBadRequest)
 		return
@@ -18,7 +18,7 @@ func GetUrlHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
-func SetUrlHandler(w http.ResponseWriter, r *http.Request) {
+func SetURLHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Wrong request", http.StatusBadRequest)
 		return
