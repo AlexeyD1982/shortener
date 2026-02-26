@@ -8,8 +8,7 @@ import (
 
 func main() {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", handler.SetURLHandler)
-	mux.HandleFunc("/EwHXdJfB", handler.GetURLHandler)
+	mux.HandleFunc("/", handler.URLHandler(nil))
 	err := http.ListenAndServe(":8080", mux)
 	if err != nil {
 		panic(err)
