@@ -2,14 +2,13 @@ package handler
 
 import (
 	"math/rand"
-	"time"
 )
 
-func generateRandomString(length int) string {
+func generateRandomString(length int, seed int64) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-	seed := rand.NewSource(time.Now().UnixNano())
-	random := rand.New(seed)
+	source := rand.NewSource(seed)
+	random := rand.New(source)
 
 	result := make([]byte, length)
 	for i := range result {

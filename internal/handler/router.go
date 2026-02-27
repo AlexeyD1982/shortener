@@ -10,7 +10,7 @@ import (
 func URLHandler(urls map[string]string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
-			if r.Header.Get("content-type") != "text/plain" {
+			if r.Header.Get("Content-Type") != "text/plain" {
 				http.Error(w, "Wrong request", http.StatusBadRequest)
 				return
 			}
@@ -27,7 +27,8 @@ func URLHandler(urls map[string]string) func(w http.ResponseWriter, r *http.Requ
 			}
 
 			url := string(content)
-			code := generateRandomString(8)
+			//code := generateRandomString(8, time.Now().UnixNano())
+			code := generateRandomString(8, 999654564654465)
 
 			if urls == nil {
 				urls = make(map[string]string)
@@ -56,7 +57,7 @@ func URLHandler(urls map[string]string) func(w http.ResponseWriter, r *http.Requ
 				http.Error(w, "Wrong request", http.StatusBadRequest)
 			}
 
-			w.Header().Set("location", url)
+			w.Header().Set("Location", url)
 			w.WriteHeader(http.StatusTemporaryRedirect)
 			return
 		}
