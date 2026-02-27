@@ -16,7 +16,7 @@ func TestURLHandler(t *testing.T) {
 	type args struct {
 		urls        map[string]string
 		method      string
-		targetUrl   string
+		targetURL   string
 		contentType string
 		body        string
 	}
@@ -36,7 +36,7 @@ func TestURLHandler(t *testing.T) {
 			args: args{
 				urls:        map[string]string{},
 				method:      http.MethodPost,
-				targetUrl:   "/",
+				targetURL:   "/",
 				contentType: "text/plain",
 				body:        "https://test.ru",
 			},
@@ -50,7 +50,7 @@ func TestURLHandler(t *testing.T) {
 			args: args{
 				urls:        map[string]string{},
 				method:      http.MethodPost,
-				targetUrl:   "/wrong",
+				targetURL:   "/wrong",
 				contentType: "text/plain",
 				body:        "https://test.ru",
 			},
@@ -64,7 +64,7 @@ func TestURLHandler(t *testing.T) {
 			args: args{
 				urls:        map[string]string{},
 				method:      http.MethodPost,
-				targetUrl:   "/",
+				targetURL:   "/",
 				contentType: "application/json",
 				body:        "https://test.ru",
 			},
@@ -78,7 +78,7 @@ func TestURLHandler(t *testing.T) {
 			args: args{
 				urls:      map[string]string{"sULftRJq": "https://test.ru"},
 				method:    http.MethodGet,
-				targetUrl: "/sULftRJq",
+				targetURL: "/sULftRJq",
 			},
 			want: want{
 				needError:    false,
@@ -92,7 +92,7 @@ func TestURLHandler(t *testing.T) {
 			args: args{
 				urls:      map[string]string{"sULftRJq": "https://test.ru"},
 				method:    http.MethodGet,
-				targetUrl: "/sULftRJq/wrong",
+				targetURL: "/sULftRJq/wrong",
 			},
 			want: want{
 				needError:    true,
@@ -104,7 +104,7 @@ func TestURLHandler(t *testing.T) {
 			args: args{
 				urls:      map[string]string{},
 				method:    http.MethodGet,
-				targetUrl: "/sULftRJq",
+				targetURL: "/sULftRJq",
 			},
 			want: want{
 				needError:    true,
@@ -115,7 +115,7 @@ func TestURLHandler(t *testing.T) {
 			name: "unsuccessfu request, wrong http method",
 			args: args{
 				method:    http.MethodPut,
-				targetUrl: "/sULftRJq",
+				targetURL: "/sULftRJq",
 			},
 			want: want{
 				needError:    true,
@@ -126,7 +126,7 @@ func TestURLHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			body := []byte(tt.args.body)
-			request := httptest.NewRequest(tt.args.method, tt.args.targetUrl, bytes.NewBuffer(body))
+			request := httptest.NewRequest(tt.args.method, tt.args.targetURL, bytes.NewBuffer(body))
 			request.Header.Set("Content-Type", tt.args.contentType)
 			w := httptest.NewRecorder()
 			URLHandler(tt.args.urls)(w, request)
