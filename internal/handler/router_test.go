@@ -150,6 +150,7 @@ func TestURLRouter(t *testing.T) {
 			ts := httptest.NewServer(URLRouter(tc.args.urls))
 			defer ts.Close()
 			resp, body := testRequest(t, ts, tc.args.method, tc.args.targetURL, tc.args.contentType, tc.args.body)
+			defer resp.Body.Close()
 			assert.Equal(t, tc.want.responseCode, resp.StatusCode)
 
 			if !tc.want.needError {
