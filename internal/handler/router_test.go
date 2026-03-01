@@ -12,7 +12,29 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestURLHandler(t *testing.T) {
+func testRequest(t *testing.T, ts *httptest.Server, method, path, contentType, body string) (*http.Response, string) {
+	req, err := http.NewRequest(method, ts.URL+path, bytes.NewBuffer([]byte(body)))
+	require.NoError(t, err)
+	if contentType != "" {
+		req.Header.Set("Content-Type", contentType)
+	}
+
+	client := ts.Client()
+	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+
+	resp, err := client.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	return resp, string(respBody)
+}
+
+func TestURLRouter(t *testing.T) {
 	type args struct {
 		urls        map[string]string
 		method      string
@@ -26,7 +48,7 @@ func TestURLHandler(t *testing.T) {
 		headerName   string
 		headerValue  string
 	}
-	tests := []struct {
+	testCases := []struct {
 		name string
 		args args
 		want want
@@ -123,30 +145,22 @@ func TestURLHandler(t *testing.T) {
 			},
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			body := []byte(tt.args.body)
-			request := httptest.NewRequest(tt.args.method, tt.args.targetURL, bytes.NewBuffer(body))
-			request.Header.Set("Content-Type", tt.args.contentType)
-			w := httptest.NewRecorder()
-			URLHandler(tt.args.urls)(w, request)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ts := httptest.NewServer(URLRouter(tc.args.urls))
+			defer ts.Close()
+			resp, body := testRequest(t, ts, tc.args.method, tc.args.targetURL, tc.args.contentType, tc.args.body)
+			assert.Equal(t, tc.want.responseCode, resp.StatusCode)
 
-			resp := w.Result()
-			defer resp.Body.Close()
-
-			assert.Equal(t, tt.want.responseCode, resp.StatusCode)
-
-			if !tt.want.needError {
-				if tt.args.method == http.MethodPost {
-					resBody, err := io.ReadAll(resp.Body)
-					require.NoError(t, err)
-					resParts := strings.Split(string(resBody), "/")
-					_, ok := tt.args.urls[resParts[len(resParts)-1]]
+			if !tc.want.needError {
+				if tc.args.method == http.MethodPost {
+					resParts := strings.Split(body, "/")
+					_, ok := tc.args.urls[resParts[len(resParts)-1]]
 					assert.True(t, ok)
 				}
-				if tt.args.method == http.MethodGet {
-					headerValue := resp.Header.Get(tt.want.headerName)
-					assert.Equal(t, tt.want.headerValue, headerValue)
+				if tc.args.method == http.MethodGet {
+					headerValue := resp.Header.Get(tc.want.headerName)
+					assert.Equal(t, tc.want.headerValue, headerValue)
 				}
 			}
 		})
