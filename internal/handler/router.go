@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/AlexeyD1982/shortener/internal/config"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -43,7 +44,7 @@ func PostHandler(urls map[string]string) func(w http.ResponseWriter, r *http.Req
 
 		urls[code] = url
 		w.WriteHeader(http.StatusCreated)
-		_, err = w.Write([]byte("http://" + r.Host + "/" + code))
+		_, err = w.Write([]byte(config.Conf.ResultHost + "/" + code))
 
 		if err != nil {
 			log.Fatal(err)
