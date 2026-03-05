@@ -1,13 +1,14 @@
-package handler
+package service
 
 import (
 	"math/rand"
+	"time"
 )
 
-func generateRandomString(length int, seed int64) string {
+func generateRandomString(length int) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-	source := rand.NewSource(seed)
+	source := rand.NewSource(time.Now().UnixNano())
 	random := rand.New(source)
 
 	result := make([]byte, length)

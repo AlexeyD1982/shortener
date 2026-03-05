@@ -9,8 +9,8 @@ import (
 )
 
 func main() {
-	config.ParseFlags()
+	cfg := config.Get()
 
 	r := handler.URLRouter(make(map[string]string))
-	log.Fatal(http.ListenAndServe(config.Conf.Host, r))
+	log.Fatal(http.ListenAndServe(cfg.Host, r))
 }

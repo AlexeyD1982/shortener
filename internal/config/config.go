@@ -12,17 +12,17 @@ import (
 var defaultHost = "localhost:8080"
 var defaultResultHost = "http://localhost:8080"
 
-type Configuration struct {
+type Conf struct {
 	Host       string
 	ResultHost string
 }
 
-var Conf = Configuration{
-	Host:       defaultHost,
-	ResultHost: defaultResultHost,
-}
+func Get() *Conf {
+	conf := Conf{
+		Host:       defaultHost,
+		ResultHost: defaultResultHost,
+	}
 
-func ParseFlags() {
 	flag.Func("a", "HTTP server URL", func(flagValue string) error {
 		urlParts := strings.Split(flagValue, ":")
 		if len(urlParts) != 2 {
@@ -32,7 +32,7 @@ func ParseFlags() {
 			return fmt.Errorf("invalid port: %s", flagValue)
 		}
 
-		Conf.Host = flagValue
+		conf.Host = flagValue
 		return nil
 	})
 
@@ -45,9 +45,11 @@ func ParseFlags() {
 		if u.Hostname() == "" {
 			return errors.New("invalid Result URL format")
 		}
-		Conf.ResultHost = flagValue
+		conf.ResultHost = flagValue
 		return nil
 	})
 
 	flag.Parse()
+
+	return &conf
 }

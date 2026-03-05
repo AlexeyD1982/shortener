@@ -1,12 +1,8 @@
 package handler
 
 import (
-	"io"
-	"log"
 	"net/http"
-	"time"
 
-	"github.com/AlexeyD1982/shortener/internal/config"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -24,31 +20,31 @@ func URLRouter(urls map[string]string) chi.Router {
 
 func PostHandler(urls map[string]string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Content-Type") != "text/plain" {
-			http.Error(w, "Wrong request", http.StatusBadRequest)
-			return
-		}
-
-		content, err := io.ReadAll(r.Body)
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		url := string(content)
-		code := generateRandomString(8, time.Now().UnixNano())
-
-		if urls == nil {
-			urls = make(map[string]string)
-		}
-
-		urls[code] = url
-		w.WriteHeader(http.StatusCreated)
-		_, err = w.Write([]byte(config.Conf.ResultHost + "/" + code))
-
-		if err != nil {
-			log.Fatal(err)
-		}
+		//if r.Header.Get("Content-Type") != "text/plain" {
+		//	http.Error(w, "Wrong request", http.StatusBadRequest)
+		//	return
+		//}
+		//
+		//content, err := io.ReadAll(r.Body)
+		//
+		//if err != nil {
+		//	log.Fatal(err)
+		//}
+		//
+		//url := string(content)
+		//code := service.generateRandomString(8)
+		//
+		//if urls == nil {
+		//	urls = make(map[string]string)
+		//}
+		//
+		//urls[code] = url
+		//w.WriteHeader(http.StatusCreated)
+		//_, err = w.Write([]byte(config.Conf.ResultHost + "/" + code))
+		//
+		//if err != nil {
+		//	log.Fatal(err)
+		//}
 	}
 }
 
