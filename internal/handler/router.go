@@ -50,11 +50,11 @@ func (h *URLHandler) handlePost() func(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "server error", http.StatusInternalServerError)
 		}
 
-		originUrl := string(content)
-		shortUrl := h.urlService.SaveURL(originUrl)
+		originURL := string(content)
+		shortURL := h.urlService.SaveURL(originURL)
 
 		w.WriteHeader(http.StatusCreated)
-		resultPath, err := url.JoinPath(h.cfg.ResultHost, shortUrl)
+		resultPath, err := url.JoinPath(h.cfg.ResultHost, shortURL)
 
 		if err != nil {
 			http.Error(w, "server error", http.StatusInternalServerError)
