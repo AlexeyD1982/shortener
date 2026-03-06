@@ -7,7 +7,7 @@ import (
 	"net/url"
 
 	"github.com/AlexeyD1982/shortener/internal/config"
-	"github.com/AlexeyD1982/shortener/pkg/local_errors"
+	localErrors "github.com/AlexeyD1982/shortener/pkg/errors"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -75,7 +75,7 @@ func (h *URLHandler) handleGet() func(w http.ResponseWriter, r *http.Request) {
 		originURL, err := h.urlService.ResolveURL(id)
 
 		if err != nil {
-			if errors.Is(err, local_errors.ErrNotFound) {
+			if errors.Is(err, localErrors.ErrNotFound) {
 				http.Error(w, err.Error(), http.StatusNotFound)
 			} else {
 				http.Error(w, err.Error(), http.StatusInternalServerError)

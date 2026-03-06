@@ -2,7 +2,7 @@ package inmemory
 
 import (
 	"github.com/AlexeyD1982/shortener/internal/model"
-	"github.com/AlexeyD1982/shortener/pkg/local_errors"
+	"github.com/AlexeyD1982/shortener/pkg/errors"
 )
 
 type Repository struct {
@@ -19,7 +19,7 @@ func NewStorageWithData(data map[string]string) *Repository {
 
 func (r *Repository) SaveURL(url *model.URL) error {
 	if _, exist := r.urls[url.Short]; exist {
-		return local_errors.ErrNotUnique
+		return errors.ErrNotUnique
 	}
 	r.urls[url.Short] = url.Origin
 	return nil
@@ -28,7 +28,7 @@ func (r *Repository) SaveURL(url *model.URL) error {
 func (r *Repository) GetURL(short string) (*model.URL, error) {
 	origin, exist := r.urls[short]
 	if !exist {
-		return nil, local_errors.ErrNotFound
+		return nil, errors.ErrNotFound
 	}
 	return &model.URL{Origin: origin, Short: short}, nil
 }
