@@ -8,11 +8,15 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/AlexeyD1982/shortener/internal/config"
+	"github.com/AlexeyD1982/shortener/internal/repository/inmemory"
+	"github.com/AlexeyD1982/shortener/internal/service"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func testRequest(t *testing.T, ts *httptest.Server, method, path, contentType, body string) (*http.Response, string) {
+	t.Helper()
 	req, err := http.NewRequest(method, ts.URL+path, bytes.NewBuffer([]byte(body)))
 	require.NoError(t, err)
 	if contentType != "" {
@@ -130,12 +134,13 @@ func TestURLRouter(t *testing.T) {
 			},
 			want: want{
 				needError:    true,
-				responseCode: http.StatusBadRequest,
+				responseCode: http.StatusNotFound,
 			},
 		},
 		{
 			name: "unsuccessfu request, wrong http method",
 			args: args{
+				urls:      map[string]string{},
 				method:    http.MethodPut,
 				targetURL: "/sULftRJq",
 			},
@@ -147,7 +152,13 @@ func TestURLRouter(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ts := httptest.NewServer(URLRouter(tc.args.urls))
+			cfg := config.Get(false)
+
+			repo := inmemory.NewStorageWithData(tc.args.urls)
+			srv := service.NewURLService(repo)
+
+			r := NewURLHandler(srv, cfg)
+			ts := httptest.NewServer(r.InitRouter())
 			defer ts.Close()
 			resp, body := testRequest(t, ts, tc.args.method, tc.args.targetURL, tc.args.contentType, tc.args.body)
 			defer resp.Body.Close()

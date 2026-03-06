@@ -1,16 +1,35 @@
 package handler
 
 import (
+	"errors"
+	"io"
 	"net/http"
+	"net/url"
 
+	"github.com/AlexeyD1982/shortener/internal/config"
+	"github.com/AlexeyD1982/shortener/pkg/local_errors"
 	"github.com/go-chi/chi/v5"
 )
 
-func URLRouter(urls map[string]string) chi.Router {
+type URLService interface {
+	SaveURL(originURL string) string
+	ResolveURL(shortURL string) (string, error)
+}
+
+type URLHandler struct {
+	urlService URLService
+	cfg        *config.Conf
+}
+
+func NewURLHandler(urlService URLService, cfg *config.Conf) *URLHandler {
+	return &URLHandler{urlService: urlService, cfg: cfg}
+}
+
+func (h *URLHandler) InitRouter() chi.Router {
 	r := chi.NewRouter()
 	r.Route("/", func(r chi.Router) {
-		r.Post("/", PostHandler(urls))
-		r.Get("/{id}", GetHandler(urls))
+		r.Post("/", h.handlePost())
+		r.Get("/{id}", h.handleGet())
 		r.MethodNotAllowed(ErrorHandler)
 		r.NotFound(ErrorHandler)
 	})
@@ -18,47 +37,52 @@ func URLRouter(urls map[string]string) chi.Router {
 	return r
 }
 
-func PostHandler(urls map[string]string) func(w http.ResponseWriter, r *http.Request) {
+func (h *URLHandler) handlePost() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		//if r.Header.Get("Content-Type") != "text/plain" {
-		//	http.Error(w, "Wrong request", http.StatusBadRequest)
-		//	return
-		//}
-		//
-		//content, err := io.ReadAll(r.Body)
-		//
-		//if err != nil {
-		//	log.Fatal(err)
-		//}
-		//
-		//url := string(content)
-		//code := service.generateRandomString(8)
-		//
-		//if urls == nil {
-		//	urls = make(map[string]string)
-		//}
-		//
-		//urls[code] = url
-		//w.WriteHeader(http.StatusCreated)
-		//_, err = w.Write([]byte(config.Conf.ResultHost + "/" + code))
-		//
-		//if err != nil {
-		//	log.Fatal(err)
-		//}
+		if r.Header.Get("Content-Type") != "text/plain" {
+			http.Error(w, "wrong request", http.StatusBadRequest)
+			return
+		}
+
+		content, err := io.ReadAll(r.Body)
+
+		if err != nil {
+			http.Error(w, "server error", http.StatusInternalServerError)
+		}
+
+		originUrl := string(content)
+		shortUrl := h.urlService.SaveURL(originUrl)
+
+		w.WriteHeader(http.StatusCreated)
+		resultPath, err := url.JoinPath(h.cfg.ResultHost, shortUrl)
+
+		if err != nil {
+			http.Error(w, "server error", http.StatusInternalServerError)
+		}
+
+		_, err = w.Write([]byte(resultPath))
+
+		if err != nil {
+			http.Error(w, "server error", http.StatusInternalServerError)
+		}
 	}
 }
 
-func GetHandler(urls map[string]string) func(w http.ResponseWriter, r *http.Request) {
+func (h *URLHandler) handleGet() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
 
-		url, ok := urls[id]
+		originURL, err := h.urlService.ResolveURL(id)
 
-		if !ok {
-			http.Error(w, "Wrong request", http.StatusBadRequest)
+		if err != nil {
+			if errors.Is(err, local_errors.ErrNotFound) {
+				http.Error(w, err.Error(), http.StatusNotFound)
+			} else {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
 		}
 
-		w.Header().Set("Location", url)
+		w.Header().Set("Location", originURL)
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	}
 }
