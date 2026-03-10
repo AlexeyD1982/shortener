@@ -1,6 +1,8 @@
 package inmemory
 
 import (
+	"fmt"
+
 	"github.com/AlexeyD1982/shortener/internal/model"
 	"github.com/AlexeyD1982/shortener/pkg/errors"
 )
@@ -19,7 +21,7 @@ func NewStorageWithData(data map[string]string) *Repository {
 
 func (r *Repository) SaveURL(url *model.URL) error {
 	if _, exist := r.urls[url.Short]; exist {
-		return errors.ErrNotUnique
+		return fmt.Errorf("%w: %s", errors.ErrNotUnique, url.Short)
 	}
 	r.urls[url.Short] = url.Origin
 	return nil
