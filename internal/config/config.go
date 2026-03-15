@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"strconv"
-	"strings"
 )
 
 var defaultHost = "localhost:8080"
@@ -27,27 +25,29 @@ func Get(withFlags bool) *Conf {
 	}
 
 	if hostEnv := os.Getenv("SERVER_ADDRESS"); hostEnv != "" {
-		conf.Host = hostEnv
+		addr, err := validateServerAddrAndGetHost(hostEnv)
+		if err == nil {
+			conf.Host = addr
+		}
 		haveHostEnv = true
 	}
 
-	if resultHostEnv := os.Getenv("SERVER_ADDRESS"); resultHostEnv != "" {
-		conf.Host = resultHostEnv
+	if resultHostEnv := os.Getenv("BASE_URL"); resultHostEnv != "" {
+		_, err := url.Parse(resultHostEnv)
+		if err == nil {
+			conf.ResultHost = resultHostEnv
+		}
 		haveResultHostEnv = true
 	}
 
 	if withFlags {
 		if !haveHostEnv {
 			flag.Func("a", "HTTP server URL", func(flagValue string) error {
-				urlParts := strings.Split(flagValue, ":")
-				if len(urlParts) != 2 {
-					return errors.New("invalid URL format")
+				addr, err := validateServerAddrAndGetHost(flagValue)
+				if err != nil {
+					return fmt.Errorf("%w: %s", err, flagValue)
 				}
-				if _, err := strconv.Atoi(urlParts[1]); err != nil {
-					return fmt.Errorf("invalid port: %s", flagValue)
-				}
-
-				conf.Host = flagValue
+				conf.Host = addr
 				return nil
 			})
 		}
@@ -71,4 +71,12 @@ func Get(withFlags bool) *Conf {
 	}
 
 	return &conf
+}
+
+func validateServerAddrAndGetHost(rawURL string) (string, error) {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return "", errors.New("invalid URL format")
+	}
+	return u.Host, nil
 }
