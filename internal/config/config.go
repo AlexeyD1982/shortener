@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strconv"
+	"strings"
 )
 
 var defaultHost = "localhost:8080"
@@ -25,9 +27,9 @@ func Get(withFlags bool) *Conf {
 	}
 
 	if hostEnv := os.Getenv("SERVER_ADDRESS"); hostEnv != "" {
-		addr, err := validateServerAddrAndGetHost(hostEnv)
+		err := validateServerAddr(hostEnv)
 		if err == nil {
-			conf.Host = addr
+			conf.Host = hostEnv
 		}
 		haveHostEnv = true
 	}
@@ -41,31 +43,33 @@ func Get(withFlags bool) *Conf {
 	}
 
 	if withFlags {
-		if !haveHostEnv {
-			flag.Func("a", "HTTP server URL", func(flagValue string) error {
-				addr, err := validateServerAddrAndGetHost(flagValue)
-				if err != nil {
-					return fmt.Errorf("%w: %s", err, flagValue)
-				}
-				conf.Host = addr
-				return nil
-			})
-		}
+		flag.Func("a", "HTTP server URL", func(flagValue string) error {
+			err := validateServerAddr(flagValue)
+			if err != nil {
+				return fmt.Errorf("%w: %s", err, flagValue)
+			}
 
-		if !haveResultHostEnv {
-			flag.Func("b", "result short URL", func(flagValue string) error {
-				u, err := url.Parse(flagValue)
-				if err != nil {
-					return errors.New("invalid Result URL format")
-				}
+			if !haveHostEnv {
+				conf.Host = flagValue
+			}
+			return nil
+		})
 
-				if u.Hostname() == "" {
-					return errors.New("invalid Result URL format")
-				}
+		flag.Func("b", "result short URL", func(flagValue string) error {
+			u, err := url.Parse(flagValue)
+			if err != nil {
+				return errors.New("invalid Result URL format")
+			}
+
+			if u.Hostname() == "" {
+				return errors.New("invalid Result URL format")
+			}
+
+			if !haveResultHostEnv {
 				conf.ResultHost = flagValue
-				return nil
-			})
-		}
+			}
+			return nil
+		})
 
 		flag.Parse()
 	}
@@ -73,10 +77,13 @@ func Get(withFlags bool) *Conf {
 	return &conf
 }
 
-func validateServerAddrAndGetHost(rawURL string) (string, error) {
-	u, err := url.Parse(rawURL)
-	if err != nil {
-		return "", errors.New("invalid URL format")
+func validateServerAddr(rawURL string) error {
+	urlParts := strings.Split(rawURL, ":")
+	if len(urlParts) != 2 {
+		return errors.New("invalid URL format")
 	}
-	return u.Host, nil
+	if _, err := strconv.Atoi(urlParts[1]); err != nil {
+		return fmt.Errorf("invalid port - %s", rawURL)
+	}
+	return nil
 }
