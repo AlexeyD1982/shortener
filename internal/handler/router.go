@@ -7,6 +7,7 @@ import (
 	"net/url"
 
 	"github.com/AlexeyD1982/shortener/internal/config"
+	"github.com/AlexeyD1982/shortener/internal/handler/middleware"
 	localErrors "github.com/AlexeyD1982/shortener/pkg/errors"
 	"github.com/go-chi/chi/v5"
 )
@@ -27,6 +28,7 @@ func NewURLHandler(urlService URLService, cfg *config.Conf) *URLHandler {
 
 func (h *URLHandler) InitRouter() chi.Router {
 	r := chi.NewRouter()
+	r.Use(middleware.RequestLogMiddleware)
 	r.Route("/", func(r chi.Router) {
 		r.Post("/", h.handlePost())
 		r.Get("/{id}", h.handleGet())

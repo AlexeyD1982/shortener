@@ -12,6 +12,10 @@ import (
 
 func main() {
 	cfg := config.Get(true)
+	err := config.InitLogger("info")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	repo := inmemory.NewStorage()
 	srv := service.NewURLService(repo)
