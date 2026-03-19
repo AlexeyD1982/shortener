@@ -29,6 +29,7 @@ func NewURLHandler(urlService URLService, cfg *config.Conf) *URLHandler {
 func (h *URLHandler) InitRouter() chi.Router {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestLogMiddleware)
+	r.Use(middleware.ResponseLogMiddleware)
 	r.Route("/", func(r chi.Router) {
 		r.Post("/", h.handlePost())
 		r.Get("/{id}", h.handleGet())
