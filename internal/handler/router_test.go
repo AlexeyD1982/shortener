@@ -13,6 +13,8 @@ import (
 	"github.com/AlexeyD1982/shortener/internal/service"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func testRequest(t *testing.T, ts *httptest.Server, method, path, contentType, body string) (*http.Response, string) {
@@ -157,7 +159,10 @@ func TestURLRouter(t *testing.T) {
 			repo := inmemory.NewStorageWithData(tc.args.urls)
 			srv := service.NewURLService(repo)
 
-			r := NewURLHandler(srv, cfg)
+			core, _ := observer.New(zap.InfoLevel)
+			logger := zap.New(core)
+
+			r := NewURLHandler(srv, cfg, logger)
 			ts := httptest.NewServer(r.InitRouter())
 			defer ts.Close()
 			resp, body := testRequest(t, ts, tc.args.method, tc.args.targetURL, tc.args.contentType, tc.args.body)
