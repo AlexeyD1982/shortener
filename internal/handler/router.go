@@ -10,6 +10,7 @@ import (
 	"github.com/AlexeyD1982/shortener/internal/handler/middleware"
 	localErrors "github.com/AlexeyD1982/shortener/pkg/errors"
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 )
 
 type URLService interface {
@@ -20,16 +21,17 @@ type URLService interface {
 type URLHandler struct {
 	urlService URLService
 	cfg        *config.Conf
+	logger     *zap.Logger
 }
 
-func NewURLHandler(urlService URLService, cfg *config.Conf) *URLHandler {
-	return &URLHandler{urlService: urlService, cfg: cfg}
+func NewURLHandler(urlService URLService, cfg *config.Conf, logger *zap.Logger) *URLHandler {
+	return &URLHandler{urlService: urlService, cfg: cfg, logger: logger}
 }
 
 func (h *URLHandler) InitRouter() chi.Router {
 	r := chi.NewRouter()
-	r.Use(middleware.RequestLogMiddleware)
-	r.Use(middleware.ResponseLogMiddleware)
+	r.Use(middleware.RequestLogMiddleware(h.logger))
+	r.Use(middleware.ResponseLogMiddleware(h.logger))
 	r.Route("/", func(r chi.Router) {
 		r.Post("/", h.handlePost())
 		r.Get("/{id}", h.handleGet())

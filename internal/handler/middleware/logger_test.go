@@ -5,7 +5,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/AlexeyD1982/shortener/internal/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
@@ -44,19 +43,19 @@ func TestRequestLogMiddleware(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			core, observed := observer.New(zap.InfoLevel)
-			oldLogger := config.Logger
-			config.Logger = zap.New(core)
-			defer func() { config.Logger = oldLogger }()
+			logger := zap.New(core)
 
-			nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
 			})
 
-			handler := RequestLogMiddleware(nextHandler)
-			req := httptest.NewRequest(tt.method, tt.path, nil)
-			w := httptest.NewRecorder()
+			middleware := RequestLogMiddleware(logger)
+			wrappedHandler := middleware(handler)
 
-			handler.ServeHTTP(w, req)
+			req := httptest.NewRequest(tt.method, tt.path, nil)
+			rec := httptest.NewRecorder()
+
+			wrappedHandler.ServeHTTP(rec, req)
 
 			logs := observed.All()
 			if len(logs) != 1 {
@@ -122,20 +121,19 @@ func TestResponseLogMiddleware(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			core, observed := observer.New(zap.InfoLevel)
-			oldLogger := config.Logger
-			config.Logger = zap.New(core)
-			defer func() { config.Logger = oldLogger }()
+			logger := zap.New(core)
 
 			nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(tt.statusCode)
 				w.Write([]byte(tt.responseBody))
 			})
 
-			handler := ResponseLogMiddleware(nextHandler)
+			middleware := ResponseLogMiddleware(logger)
+			wrappedHandler := middleware(nextHandler)
 			req := httptest.NewRequest(http.MethodGet, "/test", nil)
 			w := httptest.NewRecorder()
 
-			handler.ServeHTTP(w, req)
+			wrappedHandler.ServeHTTP(w, req)
 
 			logs := observed.All()
 			if len(logs) != 1 {
