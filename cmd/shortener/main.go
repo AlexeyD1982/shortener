@@ -12,10 +12,14 @@ import (
 
 func main() {
 	cfg := config.Get(true)
+	logger, err := config.NewLogger("info")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	repo := inmemory.NewStorage()
 	srv := service.NewURLService(repo)
 
-	r := handler.NewURLHandler(srv, cfg)
+	r := handler.NewURLHandler(srv, cfg, logger)
 	log.Fatal(http.ListenAndServe(cfg.Host, r.InitRouter()))
 }

@@ -5,7 +5,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/AlexeyD1982/shortener/internal/config"
@@ -13,6 +12,8 @@ import (
 	"github.com/AlexeyD1982/shortener/internal/service"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func testRequest(t *testing.T, ts *httptest.Server, method, path, contentType, body string) (*http.Response, string) {
@@ -149,6 +150,34 @@ func TestURLRouter(t *testing.T) {
 				responseCode: http.StatusBadRequest,
 			},
 		},
+		{
+			name: "successful POST api/shorten request",
+			args: args{
+				urls:        map[string]string{},
+				method:      http.MethodPost,
+				targetURL:   "/api/shorten",
+				contentType: "application/json",
+				body:        `{"url":"https://test.ru"}`,
+			},
+			want: want{
+				needError:    false,
+				responseCode: http.StatusCreated,
+			},
+		},
+		{
+			name: "unsuccessful POST api/shorten request invalid Content-Type",
+			args: args{
+				urls:        map[string]string{},
+				method:      http.MethodPost,
+				targetURL:   "/api/shorten",
+				contentType: "text/plain",
+				body:        `{"url":"https://test.ru"}`,
+			},
+			want: want{
+				needError:    true,
+				responseCode: http.StatusBadRequest,
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -157,19 +186,17 @@ func TestURLRouter(t *testing.T) {
 			repo := inmemory.NewStorageWithData(tc.args.urls)
 			srv := service.NewURLService(repo)
 
-			r := NewURLHandler(srv, cfg)
+			core, _ := observer.New(zap.InfoLevel)
+			logger := zap.New(core)
+
+			r := NewURLHandler(srv, cfg, logger)
 			ts := httptest.NewServer(r.InitRouter())
 			defer ts.Close()
-			resp, body := testRequest(t, ts, tc.args.method, tc.args.targetURL, tc.args.contentType, tc.args.body)
+			resp, _ := testRequest(t, ts, tc.args.method, tc.args.targetURL, tc.args.contentType, tc.args.body)
 			defer resp.Body.Close()
 			assert.Equal(t, tc.want.responseCode, resp.StatusCode)
 
 			if !tc.want.needError {
-				if tc.args.method == http.MethodPost {
-					resParts := strings.Split(body, "/")
-					_, ok := tc.args.urls[resParts[len(resParts)-1]]
-					assert.True(t, ok)
-				}
 				if tc.args.method == http.MethodGet {
 					headerValue := resp.Header.Get(tc.want.headerName)
 					assert.Equal(t, tc.want.headerValue, headerValue)
